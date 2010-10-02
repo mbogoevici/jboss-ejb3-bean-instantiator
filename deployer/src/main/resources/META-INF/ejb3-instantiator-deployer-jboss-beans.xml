@@ -13,4 +13,8 @@
     </constructor>
   </bean>
 
+  <bean name="org.jboss.ejb3.BeanInstantiatorLocator"
+        class="org.jboss.ejb3.instantiator.deployer.DefaultBeanInstantiatorLocator">
+  </bean>
+
 </deployment>

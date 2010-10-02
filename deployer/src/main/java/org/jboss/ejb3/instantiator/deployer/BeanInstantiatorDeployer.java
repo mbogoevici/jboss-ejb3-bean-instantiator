@@ -21,13 +21,14 @@
  */
 package org.jboss.ejb3.instantiator.deployer;
 
+import org.jboss.beans.metadata.api.annotations.Start;
 import org.jboss.deployers.spi.DeploymentException;
 import org.jboss.deployers.spi.deployer.DeploymentStages;
 import org.jboss.deployers.spi.deployer.helpers.AbstractDeployer;
 import org.jboss.deployers.structure.spi.DeploymentUnit;
-import org.jboss.ejb3.instantiator.spi.AttachmentNames;
 import org.jboss.ejb3.instantiator.spi.BeanInstantiator;
 import org.jboss.logging.Logger;
+import org.jboss.metadata.ejb.jboss.JBossEnterpriseBeanMetaData;
 import org.jboss.metadata.ejb.jboss.JBossMetaData;
 
 /**
@@ -38,17 +39,12 @@ import org.jboss.metadata.ejb.jboss.JBossMetaData;
  * @version $Revision: $
  */
 
-public class BeanInstantiatorDeployer extends AbstractDeployer
+public class BeanInstantiatorDeployer extends AbstractBeanInstantiatorDeployer
 {
 
    // ------------------------------------------------------------------------------||
    // Class Members ----------------------------------------------------------------||
    // ------------------------------------------------------------------------------||
-
-   /**
-    * Logger
-    */
-   private static final Logger log = Logger.getLogger(BeanInstantiatorDeployer.class);
 
    // ------------------------------------------------------------------------------||
    // Instance Members -------------------------------------------------------------||
@@ -66,40 +62,33 @@ public class BeanInstantiatorDeployer extends AbstractDeployer
 
    public BeanInstantiatorDeployer(final BeanInstantiator beanInstantiator)
    {
+      super();
       this.beanInstantiator = beanInstantiator;
-      // set the deployer to pick up EJB deployments during POST_CLASSLOADER stage 
-      this.setStage(DeploymentStages.POST_CLASSLOADER);
-      this.setInput(JBossMetaData.class);
+   }
+
+   public void setBeanInstantiatorLocator(BeanInstantiatorLocator beanInstantiatorLocator)
+   {
+      this.beanInstantiatorLocator = beanInstantiatorLocator;
    }
 
    // ------------------------------------------------------------------------------||
    // Required Implementations -----------------------------------------------------||
    // ------------------------------------------------------------------------------||
 
-   /**
-    * {@inheritDoc}
-    * @see org.jboss.deployers.spi.deployer.Deployer#deploy(org.jboss.deployers.structure.spi.DeploymentUnit)
-    */
-   public void deploy(final DeploymentUnit unit) throws DeploymentException
+   @Override
+   protected BeanInstantiator createBeanInstantiator(JBossEnterpriseBeanMetaData jBossEnterpriseBeanMetaData)
    {
-      // If not an EJB3 deployment, take no action
-      if (!this.isEjb3Deployment(unit))
-      {
-         return;
-      }
+      return beanInstantiator;
+   }
 
+   @Start
+   public void validateOnStart()
+   {
       // Ensure the instantiator was injected
-      if (beanInstantiator == null)
-      {
-         throw new IllegalStateException("Bean instantiator implemenentation was not injected");
-      }
-
-      // Attach 
-      unit.addAttachment(AttachmentNames.NAME_BEAN_INSTANCE_INSTANTIATOR, beanInstantiator);
-      if (log.isTraceEnabled())
-      {
-         log.trace("Using bean instantiator " + beanInstantiator + " for " + unit);
-      }
+     if (createBeanInstantiator(null) == null)
+     {
+        throw new IllegalStateException("Bean instantiator implemenentation was not injected");
+     }
    }
 
    // ------------------------------------------------------------------------------||
@@ -109,31 +98,5 @@ public class BeanInstantiatorDeployer extends AbstractDeployer
    /*
     * These may be overridden for testing purposes
     */
-
-   /**
-    * Returns whether this is an EJB3 Deployment, determining if we should take action
-    * @param unit
-    * @return
-    */
-   boolean isEjb3Deployment(final DeploymentUnit unit)
-   {
-      // Obtain the Merged Metadata
-      final JBossMetaData md = unit.getAttachment(JBossMetaData.class);
-
-      // If metadata's not present as an attachment, return
-      if (md == null)
-      {
-         return false;
-      }
-
-      // If this is not an EJB3 Deployment, return
-      if (!md.isEJB3x())
-      {
-         return false;
-      }
-
-      // Meets conditions
-      return true;
-   }
 
 }

@@ -44,14 +44,14 @@ import org.jboss.ejb3.instantiator.spi.AttachmentNames;
 import org.jboss.ejb3.instantiator.spi.BeanInstantiator;
 import org.jboss.kernel.spi.dependency.KernelController;
 import org.jboss.logging.Logger;
+import org.jboss.metadata.ejb.jboss.JBossEnterpriseBeanMetaData;
+import org.jboss.metadata.ejb.jboss.JBossEnterpriseBeansMetaData;
 import org.jboss.metadata.ejb.jboss.JBossMetaData;
+import org.jboss.metadata.ejb.jboss.JBossSessionBean31MetaData;
 import org.jboss.reloaded.api.ReloadedDescriptors;
 import org.jboss.vfs.VFS;
 import org.jboss.vfs.VirtualFile;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 /**
  * Ensures the {@link BeanInstantiatorDeployer} is working as expected
@@ -92,6 +92,8 @@ public class BeanInstantiatorDeployerUnitTest
     * MC bean name of the {@link MainDeployer}
     */
    protected static final String NAME_MC_MAIN_DEPLOYER = "MainDeployer";
+
+   private BeanInstantiatorLocator beanInstantiatorLocator;
 
    //-------------------------------------------------------------------------------------||
    // Instance Members -------------------------------------------------------------------||
@@ -174,6 +176,8 @@ public class BeanInstantiatorDeployerUnitTest
             .getResource("ejb3-instantiator-test-deployer-jboss-beans.xml").toURI());
       deployer.deploy(VFSDeploymentFactory.getInstance().createVFSDeployment(testInstantiatorFile));
 
+      beanInstantiatorLocator = (BeanInstantiatorLocator) controller.getContextByClass(BeanInstantiatorLocator.class).getTarget();
+
       // Deploy a dummy
       final String deploymentName = "dummyDeployment";
       final File deploymentFile = new File(this.getClass().getClassLoader().getResource(deploymentName).toURI());
@@ -184,7 +188,8 @@ public class BeanInstantiatorDeployerUnitTest
       // add JBossMetaData as an attachment (our BeanInstantiatorDeployer picks up only those deployments which
       // have JBossMetaData as an attachment)
       MutableAttachments attachments = AttachmentsFactory.createMutableAttachments();
-      attachments.addAttachment(JBossMetaData.class, new JBossMetaData());
+      JBossMetaData data = createMockMetaData();
+      attachments.addAttachment(JBossMetaData.class, data);
       dummyDeployment.setPredeterminedManagedObjects(attachments);
       // add the deployment to the MainDeployer
       deployer.addDeployment(dummyDeployment);
@@ -193,6 +198,24 @@ public class BeanInstantiatorDeployerUnitTest
       // Run the pending deployments
       deployer.process();
       deployer.checkComplete();
+   }
+
+   private JBossMetaData createMockMetaData()
+   {
+      JBossMetaData data = new JBossMetaData();
+      data.setEjbVersion("3.1");
+      JBossEnterpriseBeansMetaData enterpriseBeansMetaData = new JBossEnterpriseBeansMetaData();
+
+      JBossSessionBean31MetaData beanA = new JBossSessionBean31MetaData();
+      beanA.setEjbName("beanA");
+      enterpriseBeansMetaData.add(beanA);
+
+      JBossSessionBean31MetaData beanB = new JBossSessionBean31MetaData();
+      beanB.setEjbName("beanB");
+      enterpriseBeansMetaData.add(beanB);
+
+      data.setEnterpriseBeans(enterpriseBeansMetaData);
+      return data;
    }
 
    /**
@@ -222,11 +245,18 @@ public class BeanInstantiatorDeployerUnitTest
       final DeploymentUnit unit = TestBeanInstantiatorDeployer.lastDeployment;
       TestCase.assertNotNull("Could not obtain cached deployment unit to test", unit);
 
-      // Ensure the attachment is in place
-      final BeanInstantiator instantiator = unit.getAttachment(AttachmentNames.NAME_BEAN_INSTANCE_INSTANTIATOR,
-            BeanInstantiator.class);
-      TestCase.assertNotNull(instantiator);
+      // Ensure the attachments are in place
+      JBossMetaData jBossMetaData = unit.getAttachment(JBossMetaData.class);
+      Assert.assertNotNull(jBossMetaData);
+      Assert.assertTrue(jBossMetaData.isEJB3x());
 
+      JBossEnterpriseBeansMetaData jBossEnterpriseBeansMetaData = jBossMetaData.getEnterpriseBeans();
+      Assert.assertNotNull(jBossEnterpriseBeansMetaData);
+
+      for (JBossEnterpriseBeanMetaData enterpriseBeanMetaData: jBossEnterpriseBeansMetaData)
+      {
+         Assert.assertNotNull(beanInstantiatorLocator.getBeanInstantiator(unit,enterpriseBeanMetaData));       
+      }
    }
 
 }
