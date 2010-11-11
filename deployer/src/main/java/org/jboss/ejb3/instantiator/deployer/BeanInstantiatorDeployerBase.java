@@ -105,7 +105,7 @@ public abstract class BeanInstantiatorDeployerBase extends AbstractDeployer
          // Get the EJB
          final JBossEnterpriseBeanMetaData ejb = it.next();
          // Get an instantiator to use for the EJB
-         final BeanInstantiator instantiator = this.getBeanInstantiator(ejb);
+         final BeanInstantiator instantiator = this.getBeanInstantiator(unit, ejb);
          // Ensure the instantiator was supplied
          if (instantiator == null)
          {
@@ -169,12 +169,14 @@ public abstract class BeanInstantiatorDeployerBase extends AbstractDeployer
 
    /**
     * Obtains the {@link BeanInstantiator} implementation to use for the 
-    * specified {@link JBossEnterpriseBeanMetaData}
+    * specified {@link DeploymentUnit} and {@link JBossEnterpriseBeanMetaData}
     *  
+    *
+    * @param unit
     * @param ebmd
     * @return
     */
-   protected abstract BeanInstantiator getBeanInstantiator(JBossEnterpriseBeanMetaData ebmd);
+   protected abstract BeanInstantiator getBeanInstantiator(DeploymentUnit unit, JBossEnterpriseBeanMetaData ebmd);
 
    // ------------------------------------------------------------------------------||
    // Helper Methods ---------------------------------------------------------------||

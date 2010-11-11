@@ -71,10 +71,10 @@ public class SingletonBeanInstantiatorDeployer extends BeanInstantiatorDeployerB
 
    /**
     * {@inheritDoc}
-    * @see org.jboss.ejb3.instantiator.deployer.BeanInstantiatorDeployerBase#getBeanInstantiator(org.jboss.metadata.ejb.jboss.JBossEnterpriseBeanMetaData)
+    * @see BeanInstantiatorDeployerBase#getBeanInstantiator(org.jboss.deployers.structure.spi.DeploymentUnit, org.jboss.metadata.ejb.jboss.JBossEnterpriseBeanMetaData)
     */
    @Override
-   protected BeanInstantiator getBeanInstantiator(final JBossEnterpriseBeanMetaData ebmd)
+   protected BeanInstantiator getBeanInstantiator(DeploymentUnit unit, final JBossEnterpriseBeanMetaData ebmd)
    {
       // Use the shared instance
       return beanInstantiator;
